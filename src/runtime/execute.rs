@@ -110,7 +110,7 @@ impl Task {
 
             let cmd = cmd.args(self.args.clone());
 
-            display_command(&cmd);
+            display_command(cmd);
 
             let output = cmd.output()?;
             if output.status.success() {

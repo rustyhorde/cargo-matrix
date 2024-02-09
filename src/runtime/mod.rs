@@ -9,7 +9,7 @@
 mod cli;
 mod execute;
 
-use self::cli::{Cargo, CargoSubcommands, MatrixArgs};
+use self::cli::{Cargo, CargoSubcommands};
 use crate::{
     config::Config,
     feature::FeatureMatrix,
@@ -22,7 +22,7 @@ use figment::{
     providers::{Format, Json},
     Figment,
 };
-use std::ffi::OsString;
+use std::{ffi::OsString, path::PathBuf};
 use yansi::Paint;
 
 pub(crate) fn run<I, T>(args: Option<I>) -> Result<()>
@@ -39,15 +39,20 @@ where
 
     match cli {
         Cargo::Matrix(matrix_args) => {
-            let metadata = load_metadata(&matrix_args)?;
+            // Grab the manifest path from the command line, if supplied
             let manifest_path = matrix_args.manifest_path();
+            // Read the cargo metadata
+            let metadata = load_metadata(manifest_path)?;
+            // Determine the channel, default is 'default'
             let channel = matrix_args.channel().as_deref().unwrap_or("default");
+            // Generate the feature set matricies for every package in the workspace
             let matricies: Vec<(&Package, FeatureMatrix)> = get_workspace_members(&metadata)
                 .map(generate_config)
                 .filter_map(Result::ok)
                 .map(|(package, config)| generate_matrix(package, &config, channel))
                 .filter_map(Result::ok)
                 .collect();
+            // Output some stuff
             println!();
             println!(
                 "{} Using channel config '{channel}'",
@@ -55,6 +60,7 @@ where
             );
             println!();
 
+            // Determine the base command we are running
             let (task_kind, varargs) = match matrix_args.command() {
                 CargoSubcommands::Build(varargs) => (TaskKind::Build, varargs),
                 CargoSubcommands::Check(varargs) => (TaskKind::Check, varargs),
@@ -62,6 +68,7 @@ where
                 CargoSubcommands::Test(varargs) => (TaskKind::Test, varargs),
             };
 
+            // Filter the matricies if a specific package was specified at the command line
             let matricies = if let Some(package) = matrix_args.package() {
                 matricies
                     .iter()
@@ -72,6 +79,7 @@ where
                 matricies
             };
 
+            // Execute the task against the matricies
             for (package, matrix) in matricies {
                 Task::new(
                     task_kind,
@@ -97,9 +105,9 @@ fn get_workspace_members(metadata: &Metadata) -> impl Iterator<Item = &Package> 
         .filter(|package| metadata.workspace_members.contains(&package.id))
 }
 
-fn load_metadata(matrix_args: &MatrixArgs) -> Result<Metadata> {
+fn load_metadata(manifest_path: &Option<PathBuf>) -> Result<Metadata> {
     let mut cmd = MetadataCommand::new();
-    if let Some(manifest_path) = matrix_args.manifest_path() {
+    if let Some(manifest_path) = manifest_path {
         let _ = cmd.manifest_path(manifest_path);
     }
     Ok(cmd.exec()?)
