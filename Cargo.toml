@@ -1,0 +1,29 @@
+[package]
+authors = ["Jason Ozias <jason.g.ozias@gmail.com>"]
+categories = ["development-tools", "development-tools::build-utils"]
+description = "Run feature matrices against cargo commands that support feature lists"
+documentation = "https://docs.rs/cargo-matrix"
+edition = "2021"
+homepage = "https://github.com/rustyhorde/cargo-matrix"
+keywords = ["cargo", "features", "build", "tool"]
+license = "MIT OR Apache-2.0"
+name = "cargo-matrix"
+readme = "README.md"
+repository = "https://github.com/rustyhorde/cargo-matrix"
+version = "0.1.0"
+
+[features]
+unstable = []
+
+[dependencies]
+anyhow = "1.0.79"
+cargo_metadata = "0.18.1"
+clap = { version = "4.5.0", features = ["cargo", "derive"] }
+derive_more = { version = "1.0.0-beta.6", features = ["as_ref", "deref", "deref_mut"] }
+figment = { version = "0.10.14", features = ["json"] }
+getset = "0.1.2"
+itertools = "0.12.1"
+serde = { version = "1.0.196", features = ["derive"] }
+
+[build-dependencies]
+rustversion = "1.0.14"

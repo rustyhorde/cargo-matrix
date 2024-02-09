@@ -1,0 +1,26 @@
+[package]
+name = "sample"
+version = "0.0.0"
+edition = "2021"
+
+[features]
+unstable = []
+feat-a = ["feat-b"]
+feat-b = ["rand"]
+feat-c = ["feat-d"]
+feat-d = []
+
+[package.metadata.cargo-matrix]
+[[package.metadata.cargo-matrix.channel]]
+name = "default"
+deny = ["feat-d", "unstable"]
+include = ["temp-env"]
+skip = [["feat-c", "temp-env"]]
+
+[[package.metadata.cargo-matrix.channel]]
+name = "nightly"
+deny = ["feat-d"]
+
+[dependencies]
+rand = { version = "0.8.5", optional = true }
+temp-env = { version = "0.3.6", optional = true }
