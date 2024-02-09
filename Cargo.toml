@@ -23,7 +23,9 @@ derive_more = { version = "1.0.0-beta.6", features = ["as_ref", "deref", "deref_
 figment = { version = "0.10.14", features = ["json"] }
 getset = "0.1.2"
 itertools = "0.12.1"
+lazy_static = "1.4.0"
 serde = { version = "1.0.196", features = ["derive"] }
+yansi = "1.0.0-rc.1"
 
 [build-dependencies]
 rustversion = "1.0.14"

@@ -14,22 +14,20 @@ use figment::{
 };
 use getset::{Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
-#[derive(Debug, Deserialize, Getters, MutGetters, Serialize, Setters)]
+#[derive(Clone, Debug, Deserialize, Getters, MutGetters, Serialize, Setters)]
 #[getset(get = "pub(crate)")]
-#[serde(bound(deserialize = "'de: 'c"))]
-pub(crate) struct Config<'c> {
+pub(crate) struct Config {
     #[getset(get_mut = "pub(crate)")]
-    channel: Vec<Channel<'c>>,
+    channel: Vec<Channel>,
 }
 
-impl Config<'_> {
+impl Config {
     pub(crate) fn from<T: Provider>(provider: T) -> Result<Self> {
         Ok(Figment::from(provider).extract()?)
     }
 
-    pub(crate) fn seed(&self, channel: &str) -> Result<Option<FeatureSet<'_>>> {
+    pub(crate) fn seed(&self, channel: &str) -> Result<Option<FeatureSet>> {
         if let Some(seed) = self
             .get_channel(channel)
             .or_else(|_| self.get_default())?
@@ -41,31 +39,39 @@ impl Config<'_> {
         }
     }
 
-    pub(crate) fn include(&self, channel: &str) -> Result<FeatureSet<'_>> {
-        if let Some(include) = self
+    pub(crate) fn always_include(&self, channel: &str) -> Result<FeatureSet> {
+        if let Some(always_include) = self
             .get_channel(channel)
             .or_else(|_| self.get_default())?
-            .include()
+            .always_include()
         {
-            Ok(include.clone())
+            Ok(always_include.clone())
         } else {
-            Ok(self.get_default()?.include().clone().unwrap_or_default())
+            Ok(self
+                .get_default()?
+                .always_include()
+                .clone()
+                .unwrap_or_default())
         }
     }
 
-    pub(crate) fn deny(&self, channel: &str) -> Result<FeatureSet<'_>> {
-        if let Some(deny) = self
+    pub(crate) fn always_deny(&self, channel: &str) -> Result<FeatureSet> {
+        if let Some(always_deny) = self
             .get_channel(channel)
             .or_else(|_| self.get_default())?
-            .deny()
+            .always_deny()
         {
-            Ok(deny.clone())
+            Ok(always_deny.clone())
         } else {
-            Ok(self.get_default()?.deny().clone().unwrap_or_default())
+            Ok(self
+                .get_default()?
+                .always_deny()
+                .clone()
+                .unwrap_or_default())
         }
     }
 
-    pub(crate) fn skip(&self, channel: &str) -> Result<FeatureMatrix<'_>> {
+    pub(crate) fn skip(&self, channel: &str) -> Result<FeatureMatrix> {
         if let Some(skip) = self
             .get_channel(channel)
             .or_else(|_| self.get_default())?
@@ -83,17 +89,28 @@ impl Config<'_> {
             .or_else(|_| self.get_default())?
             .include_hidden()
         {
-            Ok(include_hidden.clone())
+            Ok(*include_hidden)
+        } else {
+            Ok(self.get_default()?.include_hidden().unwrap_or_default())
+        }
+    }
+
+    pub(crate) fn include_all_optional(&self, channel: &str) -> Result<bool> {
+        if let Some(include_all_optional) = self
+            .get_channel(channel)
+            .or_else(|_| self.get_default())?
+            .include_all_optional()
+        {
+            Ok(*include_all_optional)
         } else {
             Ok(self
                 .get_default()?
-                .include_hidden()
-                .clone()
+                .include_all_optional()
                 .unwrap_or_default())
         }
     }
 
-    pub(crate) fn include_optional(&self, channel: &str) -> Result<bool> {
+    pub(crate) fn include_optional(&self, channel: &str) -> Result<FeatureSet> {
         if let Some(include_optional) = self
             .get_channel(channel)
             .or_else(|_| self.get_default())?
@@ -109,11 +126,11 @@ impl Config<'_> {
         }
     }
 
-    pub(crate) fn get_default(&self) -> Result<&'_ Channel<'_>> {
+    fn get_default(&self) -> Result<&'_ Channel> {
         self.get_channel("default")
     }
 
-    fn get_channel(&self, channel: &str) -> Result<&'_ Channel<'_>> {
+    fn get_channel(&self, channel: &str) -> Result<&'_ Channel> {
         self.channel
             .iter()
             .find(|c| c.name() == channel)
@@ -121,17 +138,18 @@ impl Config<'_> {
     }
 }
 
-impl Default for Config<'_> {
+impl Default for Config {
     fn default() -> Self {
-        let mut default_channel = Channel::default();
-        default_channel.name = Cow::Borrowed("default");
         Self {
-            channel: vec![default_channel],
+            channel: vec![Channel {
+                name: "default".to_string(),
+                ..Default::default()
+            }],
         }
     }
 }
 
-impl Provider for Config<'_> {
+impl Provider for Config {
     fn metadata(&self) -> Metadata {
         Metadata::named("config")
     }
@@ -141,35 +159,34 @@ impl Provider for Config<'_> {
     }
 }
 
-#[derive(Debug, Default, Deserialize, Getters, Serialize, Setters)]
+#[derive(Clone, Debug, Default, Deserialize, Getters, Serialize)]
 #[getset(get = "pub(crate)")]
-#[serde(bound(deserialize = "'de: 'c"))]
-pub(crate) struct Channel<'c> {
-    name: Cow<'c, str>,
+pub(crate) struct Channel {
+    name: String,
 
     /// If this set is not empty, only these features will be used to construct the
     /// matrix.
-    seed: Option<FeatureSet<'c>>,
+    seed: Option<FeatureSet>,
 
     /// All of these features will be included in every feature set in the matrix.
-    include: Option<FeatureSet<'c>>,
+    always_include: Option<FeatureSet>,
 
     /// Any feature set that includes any of these will be excluded from the matrix.
     /// This includes features enabled by other features.
-    ///
-    /// This can be used for things like having an "__unstable" feature that gets
-    /// enabled by any other features that use unstable rust features and then
-    /// excluding "__unstable" if not on nightly.
-    #[getset(set = "pub(crate)")]
-    deny: Option<FeatureSet<'c>>,
+    always_deny: Option<FeatureSet>,
 
     /// These sets will be dropped from the matrix.
-    skip: Option<FeatureMatrix<'c>>,
+    skip: Option<FeatureMatrix>,
 
     /// Some crates prepend internal features with a double underscore. If this
     /// flag is not set, those features will not be used to build the matrix, but
     /// will be allowed if they are enabled by other features.
     include_hidden: Option<bool>,
 
-    include_optional: Option<bool>,
+    /// Include all optional dependencies
+    include_all_optional: Option<bool>,
+
+    /// Include specific optional dependencies.
+    /// This is independent of the `include_all_optional` setting.
+    include_optional: Option<FeatureSet>,
 }

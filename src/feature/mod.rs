@@ -11,10 +11,7 @@ mod set;
 
 use derive_more::{AsMut, AsRef, Deref, DerefMut};
 use serde::{Deserialize, Serialize};
-use std::{
-    borrow::Cow,
-    fmt::{Display, Formatter},
-};
+use std::fmt::{Display, Formatter};
 
 pub(crate) use self::matrix::Matrix as FeatureMatrix;
 pub(crate) use self::set::Set as FeatureSet;
@@ -37,22 +34,28 @@ pub(crate) use self::set::Set as FeatureSet;
 #[serde(transparent)]
 #[as_ref(forward)]
 #[as_mut(forward)]
-pub(crate) struct Feature<'a>(pub(crate) Cow<'a, str>);
+pub(crate) struct Feature(pub(crate) String);
 
-impl Display for Feature<'_> {
+impl Display for Feature {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl From<String> for Feature<'static> {
+impl From<String> for Feature {
     fn from(s: String) -> Self {
-        Feature(Cow::Owned(s))
+        Feature(s)
     }
 }
 
-impl<'a> From<&'a str> for Feature<'a> {
-    fn from(s: &'a str) -> Self {
-        Feature(Cow::Borrowed(s))
+impl From<&String> for Feature {
+    fn from(s: &String) -> Self {
+        Feature(s.clone())
+    }
+}
+
+impl From<&str> for Feature {
+    fn from(s: &str) -> Self {
+        Feature(s.to_string())
     }
 }

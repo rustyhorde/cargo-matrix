@@ -9,17 +9,21 @@ feat-a = ["feat-b"]
 feat-b = ["rand"]
 feat-c = ["feat-d"]
 feat-d = []
+__vergen_test = []
 
 [package.metadata.cargo-matrix]
 [[package.metadata.cargo-matrix.channel]]
 name = "default"
-deny = ["feat-d", "unstable"]
-include = ["temp-env"]
+always_deny = ["feat-d", "unstable"]
+include_optional = ["temp-env"]
 skip = [["feat-c", "temp-env"]]
 
 [[package.metadata.cargo-matrix.channel]]
 name = "nightly"
-deny = ["feat-d"]
+include_hidden = true
+always_deny = ["feat-d"]
+include_optional = []
+always_include = ["__vergen_test"]
 
 [dependencies]
 rand = { version = "0.8.5", optional = true }

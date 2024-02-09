@@ -7,12 +7,9 @@
 // modified, or distributed except according to those terms.
 
 use super::Feature;
-use cargo_metadata::Package;
 use derive_more::{AsMut, AsRef, Deref, DerefMut};
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{
-    borrow::Cow,
     collections::BTreeSet,
     fmt::{Display, Formatter},
     ops::Deref as OpsDeref,
@@ -35,31 +32,9 @@ use std::{
     Deserialize,
 )]
 #[serde(transparent)]
-pub(crate) struct Set<'f>(BTreeSet<Feature<'f>>);
+pub(crate) struct Set(BTreeSet<Feature>);
 
-impl<'f> Set<'f> {
-    #[allow(dead_code)]
-    pub(crate) fn add_transitive_features(&mut self, package: &'f Package) {
-        let raw_features = &package.features;
-        let transitive = self
-            .iter()
-            .filter_map(|feature| {
-                raw_features.get(feature.as_ref()).map(|transitives| {
-                    transitives
-                        .iter()
-                        .filter(|transitive| !transitive.starts_with("dep:"))
-                        .map(AsRef::as_ref)
-                })
-            })
-            .flatten()
-            .map(Cow::Borrowed)
-            .map(Feature)
-            .collect_vec();
-        self.extend(transitive);
-    }
-}
-
-impl Display for Set<'_> {
+impl Display for Set {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut iter = self.iter();
         if let Some(feature) = iter.next() {
@@ -72,14 +47,14 @@ impl Display for Set<'_> {
     }
 }
 
-impl<'f> FromIterator<Feature<'f>> for Set<'f> {
-    fn from_iter<T: IntoIterator<Item = Feature<'f>>>(iter: T) -> Self {
+impl FromIterator<Feature> for Set {
+    fn from_iter<T: IntoIterator<Item = Feature>>(iter: T) -> Self {
         Set(iter.into_iter().collect())
     }
 }
 
-impl<'f> IntoIterator for Set<'f> {
-    type Item = Feature<'f>;
+impl IntoIterator for Set {
+    type Item = Feature;
     type IntoIter = <<Self as OpsDeref>::Target as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {

@@ -38,6 +38,10 @@ pub(crate) struct MatrixArgs {
     #[arg(long)]
     manifest_path: Option<PathBuf>,
 
+    /// Specify a specific package to run matrix against
+    #[arg(long, short)]
+    package: Option<String>,
+
     /// The supported cargo subcomand to run
     #[command(subcommand)]
     command: CargoSubcommands,
@@ -55,7 +59,8 @@ pub(crate) enum CargoSubcommands {
     Test(VarArgs),
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Getters)]
+#[getset(get = "pub(crate)")]
 
 pub(crate) struct VarArgs {
     /// Arguments to pass to the cargo command
