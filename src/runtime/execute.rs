@@ -27,10 +27,10 @@ pub(crate) enum TaskKind {
     Build,
     Check,
     Clippy,
+    LlvmCov,
     Test,
 }
 
-#[allow(dead_code)]
 pub(crate) struct Task {
     kind: TaskKind,
     package: String,
@@ -65,6 +65,7 @@ impl Task {
                 TaskKind::Build => print!("{}", Paint::cyan("    Building ").bold()),
                 TaskKind::Check => print!("{}", Paint::cyan("    Checking ").bold()),
                 TaskKind::Clippy => print!("{}", Paint::cyan("      Clippy ").bold()),
+                TaskKind::LlvmCov => print!("{}", Paint::cyan("    Coverage ").bold()),
                 TaskKind::Test => print!("{}", Paint::cyan("     Testing ").bold()),
             }
 
@@ -76,6 +77,7 @@ impl Task {
                 TaskKind::Build => cmd.arg("build"),
                 TaskKind::Check => cmd.arg("check"),
                 TaskKind::Clippy => cmd.arg("clippy"),
+                TaskKind::LlvmCov => cmd.arg("llvm-cov"),
                 TaskKind::Test => cmd.arg("test"),
             };
 
@@ -112,9 +114,11 @@ impl Task {
 
             display_command(cmd);
 
-            let output = cmd.output()?;
-            if output.status.success() {
-                on_success();
+            if !self.dry_run {
+                let output = cmd.output()?;
+                if output.status.success() {
+                    on_success();
+                }
             }
         }
 

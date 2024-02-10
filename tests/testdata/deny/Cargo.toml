@@ -20,10 +20,28 @@ skip = [["feat-c", "temp-env"]]
 
 [[package.metadata.cargo-matrix.channel]]
 name = "nightly"
-include_hidden = true
 always_deny = ["feat-d"]
 include_optional = []
 always_include = ["__vergen_test"]
+
+[[package.metadata.cargo-matrix.channel]]
+name = "llvm-cov-empty"
+always_deny = ["feat-a", "feat-b", "feat-c", "feat-d", "unstable"]
+include_optional = []
+always_include = ["__vergen_test"]
+
+[[package.metadata.cargo-matrix.channel]]
+name = "llvm-cov"
+always_deny = []
+include_optional = []
+always_include = [
+    "__vergen_test",
+    "feat-a",
+    "feat-b",
+    "feat-c",
+    "feat-d",
+    "unstable",
+]
 
 [dependencies]
 rand = { version = "0.8.5", optional = true }

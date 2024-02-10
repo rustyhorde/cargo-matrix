@@ -65,6 +65,7 @@ where
                 CargoSubcommands::Build(varargs) => (TaskKind::Build, varargs),
                 CargoSubcommands::Check(varargs) => (TaskKind::Check, varargs),
                 CargoSubcommands::Clippy(varargs) => (TaskKind::Clippy, varargs),
+                CargoSubcommands::LlvmCov(varargs) => (TaskKind::LlvmCov, varargs),
                 CargoSubcommands::Test(varargs) => (TaskKind::Test, varargs),
             };
 

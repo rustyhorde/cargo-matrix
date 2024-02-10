@@ -57,6 +57,8 @@ pub(crate) enum CargoSubcommands {
     Clippy(VarArgs),
     /// cargo test
     Test(VarArgs),
+    /// cargo llvm-cov
+    LlvmCov(VarArgs),
 }
 
 #[derive(Args, Debug, Getters)]
