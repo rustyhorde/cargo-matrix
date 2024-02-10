@@ -1,10 +1,12 @@
 on:
   release:
-    types: [created]
-  
+    types: [published]
+
+name: 🔥 Release 🔥
+
 jobs:
   release:
-    name: Release
+    name: 🔥 Release 🔥
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
