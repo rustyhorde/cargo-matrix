@@ -15,7 +15,7 @@ use crate::{
     feature::FeatureMatrix,
     runtime::execute::{Task, TaskKind},
 };
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 use clap::Parser;
 use figment::{
@@ -77,7 +77,41 @@ where
                     .cloned()
                     .collect()
             } else {
-                matricies
+                let num_chunks = matrix_args.num_chunks();
+                let chunk = matrix_args.chunk();
+                if *chunk == 0 {
+                    return Err(anyhow!("chunk argument cannot be 0"));
+                }
+                if *num_chunks == 0 {
+                    return Err(anyhow!("num_chunks argument cannot be 0"));
+                }
+                if chunk > num_chunks {
+                    return Err(anyhow!("chunk must be less than or equal to num_chunks"));
+                }
+
+                let mut chunk_size = matricies.len() / num_chunks;
+                if matricies.len() % num_chunks != 0 {
+                    chunk_size += 1;
+                }
+                let Some(matrix_chunk) = matricies.chunks(chunk_size).nth(chunk - 1) else {
+                    println!(
+                        "Chunk is empty (did you ask for more chunks than there are packages?"
+                    );
+                    return Ok(());
+                };
+                if *num_chunks != 1 {
+                    let len = matrix_chunk.len();
+                    let packages: String = matrix_chunk
+                        .iter()
+                        .flat_map(|(p, _)| [&p.name, ","])
+                        .collect();
+                    let packages = packages.trim_end_matches(',');
+                    print!("{}", Paint::cyan("    Chunking ").bold());
+                    println!(
+                        "Running on chunk {chunk} out of {num_chunks} ({len} package(s): {packages})"
+                    );
+                }
+                matrix_chunk.to_vec()
             };
 
             // Execute the task against the matricies

@@ -42,6 +42,24 @@ pub(crate) struct MatrixArgs {
     #[arg(long, short)]
     package: Option<String>,
 
+    /// Split the workspace packages into 'n' chunks of packages
+    #[arg(
+        long,
+        default_value_t = 1,
+        requires = "chunk",
+        help = "Split the workspace into n chunks, each chunk containing a roughly equal number of crates"
+    )]
+    num_chunks: usize,
+
+    /// The chunk number to test, i.e. if num_chunks = 4, chunks can be 1, 2, 3, or 4.
+    #[arg(
+        long,
+        default_value_t = 1,
+        requires = "n_chunks",
+        help = "Which chunk to test, indexed at 1"
+    )]
+    chunk: usize,
+
     /// The supported cargo subcomand to run
     #[command(subcommand)]
     command: CargoSubcommands,
