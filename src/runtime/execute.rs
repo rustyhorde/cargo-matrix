@@ -31,6 +31,12 @@ pub(crate) enum TaskKind {
     Test,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum TaskResult {
+    Success,
+    Fail(i32),
+}
+
 pub(crate) struct Task {
     kind: TaskKind,
     package: String,
@@ -59,7 +65,7 @@ impl Task {
         }
     }
 
-    pub(crate) fn execute(self) -> Result<()> {
+    pub(crate) fn execute(self) -> Result<TaskResult> {
         for feature_set in self.matrix {
             match self.kind {
                 TaskKind::Build => print!("{}", Paint::cyan("    Building ").bold()),
@@ -118,11 +124,14 @@ impl Task {
                 let output = cmd.output()?;
                 if output.status.success() {
                     on_success();
+                } else {
+                    let code = output.status.code().unwrap_or(-1);
+                    return Ok(TaskResult::Fail(code));
                 }
             }
         }
 
-        Ok(())
+        Ok(TaskResult::Success)
     }
 }
 

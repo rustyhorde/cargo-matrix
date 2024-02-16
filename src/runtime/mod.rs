@@ -13,7 +13,7 @@ use self::cli::{Cargo, CargoSubcommands};
 use crate::{
     config::Config,
     feature::FeatureMatrix,
-    runtime::execute::{Task, TaskKind},
+    runtime::execute::{Task, TaskKind, TaskResult},
 };
 use anyhow::{anyhow, Result};
 use cargo_metadata::{Metadata, MetadataCommand, Package};
@@ -116,7 +116,7 @@ where
 
             // Execute the task against the matricies
             for (package, matrix) in matricies {
-                Task::new(
+                let task_result = Task::new(
                     task_kind,
                     package.name.clone(),
                     matrix,
@@ -125,6 +125,10 @@ where
                     *matrix_args.dry_run(),
                 )
                 .execute()?;
+                match task_result {
+                    TaskResult::Success => continue,
+                    TaskResult::Fail(code) => return Err(anyhow!("task failed: {}", code)),
+                }
             }
         }
     }
