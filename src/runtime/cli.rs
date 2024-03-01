@@ -51,7 +51,7 @@ pub(crate) struct MatrixArgs {
     )]
     num_chunks: usize,
 
-    /// The chunk number to test, i.e. if num_chunks = 4, chunks can be 1, 2, 3, or 4.
+    /// The chunk number to test, i.e. if `num_chunks` = 4, chunks can be 1, 2, 3, or 4.
     #[arg(
         long,
         default_value_t = 1,
